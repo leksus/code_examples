@@ -1,0 +1,15 @@
+<div *ngIf="isLoaded">
+    <h3>Выполнение заданий</h3>
+    <div *ngFor="let question of questions; let i = index">
+        <div>{{question.text}}</div>
+        <vt-select
+                [(answers)]="question.options"
+                (modelChange)="changeResult(i, $event)"
+                [(selectedValue)]="results[i]">
+        </vt-select>
+    </div>
+
+    <vt-score [countAll]="results.length" [countSuccess]="countSuccess"></vt-score>
+    <hr>
+    <vt-learn [variants]="variants"></vt-learn>
+</div>
