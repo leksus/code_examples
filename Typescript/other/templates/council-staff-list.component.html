@@ -1,0 +1,47 @@
+<h3>Состав АК</h3>
+<div *ngIf="isLoading">
+    Идет загрузка...
+</div>
+<div *ngIf="!isLoading">
+    <table class="table">
+        <tr>
+            <th>Номер состава</th>
+            <th>ФИО председателя</th>
+            <th>Количество членов АК</th>
+            <th>Дата утверждения комиссии</th>
+            <th>Действующий/Недействующий</th>
+            <th *ngIf="userHelper.isAdminOnly()">Действие</th>
+        </tr>
+        <tr *ngFor="let staff of staffs; let i = index">
+            <td>
+                {{staff.id}}
+            </td>
+            <td>
+                {{getStaffLeadFio(staff)}}
+            </td>
+            <td>{{staff.participants.length}}</td>
+            <td>{{staff.date|datex:'DD.MM.YYYY':'+03:00'}}</td>
+            <td>{{translateIsActive(staff)}}</td>
+            <td>
+                <div *ngIf="userHelper.isAdminOnly()">
+                    <a routerLink="/attestation/staffs/{{staff.id}}">
+                        <div class="btn btn-primary">
+                            Редактировать
+                        </div>
+                    </a>
+                    <div class="btn btn-danger" (click)="onDelete(staff)">
+                        Удалить
+                    </div>
+                </div>
+            </td>
+        </tr>
+    </table>
+
+    <div class="form-group" *ngIf="userHelper.isAdminOnly()">
+        <a routerLink="/attestation/staffs/0">
+            <div class="btn btn-primary">
+                Добавить
+            </div>
+        </a>
+    </div>
+</div>

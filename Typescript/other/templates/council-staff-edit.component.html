@@ -1,0 +1,106 @@
+<h2>Поименный список состава комиссии</h2>
+<div *ngIf="isLoading">
+    Идет загрузка...
+</div>
+<div *ngIf="!isLoading">
+    <div class="form-group col-sm-4" *ngIf="staff.id">
+        <h3>№ состава - {{staff.id}}</h3>
+    </div>
+    <div class="form-group col-sm-4">
+        <label>Дата утверждения: </label>
+        <ave-datetime-picker
+                [(ngModel)]="staff.date"
+                [timezone]="'+03:00'"
+                ngDefaultControl>
+        </ave-datetime-picker>
+    </div>
+    <div class="form-group col-sm-4">
+        <label>Активен: </label>
+        <select [ngModel]='staff.is_active' name="option" class="form-control">
+            <option value=""></option>
+            <option value="1">Активен</option>
+            <option value="0">Неактивен</option>
+        </select>
+    </div>
+    <table class="table">
+        <tr>
+            <th>ФИО</th>
+            <th>Роль</th>
+            <th>Должность</th>
+            <th>Место работы</th>
+            <!--<th *ngIf="userHelper.isAdminOnly()">Действие</th>-->
+        </tr>
+        <tr *ngFor="let participant of participants; let i = index">
+            <td>
+                {{participant.council_participant.fio}}
+            </td>
+            <td>
+                {{participant.role.title}}
+            </td>
+            <td>{{participant.council_participant.position}}</td>
+            <td>{{participant.council_participant.job}}</td>
+            <!--<td>-->
+            <!--<div *ngIf="userHelper.isAdminOnly()">-->
+            <!--<div class="btn btn-primary" (click)="onEditParticipant(participant)">-->
+            <!--Редактировать-->
+            <!--</div>-->
+            <!--<div class="btn btn-danger" (click)="onDelete(participant)">-->
+            <!--Удалить-->
+            <!--</div>-->
+            <!--</div>-->
+            <!--</td>-->
+        </tr>
+    </table>
+
+    <div class="form-group" *ngIf="userHelper.isAdminOnly()">
+        <div class="btn btn-default" (click)="showEditForm = true">
+            Добавить
+        </div>
+    </div>
+    <div class="form-group col-sm-12">
+        <div class="btn btn-primary" (click)="onSave()">
+            Сохранить состав
+        </div>
+        <a routerLink="/attestation/staffs">
+            <div class="btn btn-primary">
+                Назад
+            </div>
+        </a>
+    </div>
+
+    <div class="frame col-sm-12" *ngIf="showEditForm">
+        <div class="frame__title">
+            Добавить нового участника
+        </div>
+        <div class="form-group col-sm-6">
+            <label>ФИО: </label>
+            <ave-autocomplete
+                    [filter]="{}"
+                    [value]="tempCouncilParticipant"
+                    [valueName]="'fio'"
+                    (onSelect)="onCouncilParticipantChange($event)"
+                    [createObj]="false"
+                    [searchService]="councilParticipantResource"
+            ></ave-autocomplete>
+            <ave-error [error]="errors.get('fio')"></ave-error>
+        </div>
+        <div class="form-group col-sm-6">
+            <label>Роль:</label>
+            <select [ngModel]='tempCouncilRole' (ngModelChange)="onCouncilRoleChange($event)" name="option" class="form-control">
+                <option value=""></option>
+                <option *ngFor="let option of roles" [ngValue]="option">
+                    <span *ngIf="option.title">{{option.title}}</span>
+                </option>
+            </select>
+            <ave-error [error]="errors.get('role')"></ave-error>
+        </div>
+        <div class="form-group col-sm-12">
+            <div class="btn btn-primary" (click)="onAddParticipant()">
+                Добавить
+            </div>
+            <div class="btn btn-danger" (click)="showEditForm = false">
+                Закрыть
+            </div>
+        </div>
+    </div>
+</div>
