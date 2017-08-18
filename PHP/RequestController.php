@@ -7,8 +7,8 @@ use AppBundle\Entity\Request;
 use AppBundle\Entity\UserSnapshot;
 use AppBundle\Helper\PrecomHelper;
 use AppBundle\Helper\TestResultHelper;
-use \RestBundle\Controller;
-use \RestBundle\Traits;
+use My\RestBundle\Controller;
+use My\RestBundle\Traits;
 use FOS\RestBundle\Controller\Annotations\View;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\ParamConverter;
 use AppBundle\Form\RequestType;
@@ -19,7 +19,6 @@ use FOS\RestBundle\Controller\Annotations\RouteResource;
 use Doctrine\Common\Annotations\Annotation\IgnoreAnnotation;
 
 /**
- * Контроллер заявок
  * @RouteResource("request")
  * @IgnoreAnnotation("Action")
  * @IgnoreAnnotation("ActionProxy")
@@ -38,8 +37,6 @@ class RequestController extends Controller
         Traits\ControllerUpdate::putAction as update;
     }
 
-
-
     /**
      * @Action(code="read")
      * @View(serializerEnableMaxDepthChecks=true,serializerGroups={"request"})
@@ -47,10 +44,11 @@ class RequestController extends Controller
     public function cgetAction (HttpRequest $request) {
         return $this->getCollection($request);
     }
+
     /**
      * @Action(code="read")
      * @View(serializerEnableMaxDepthChecks=true,serializerGroups={"request"})
-     *  @ParamConverter("entity", converter="rest_converter")
+     * @ParamConverter("entity", converter="rest_converter")
      */
     public function getAction ($entity) {
         return $this->getOne($entity);
@@ -59,6 +57,7 @@ class RequestController extends Controller
     public function postAction(HttpRequest $request) {
         return $this->create($request);
     }
+
     /**
      *
      * @Action(code="update")
@@ -97,10 +96,10 @@ class RequestController extends Controller
         $em = $this->container->get('doctrine')->getManager();
         $request = $em->find('AppBundle:Request', $requestId);
         if (!$request) {
-            throw new \Exception('Заявка не найдена');
+            throw new \Exception('Not found');
         }
         if ($request->getCompiledResult()) {
-            throw new \Exception('Результаты уже присутствуют в заявке');
+            throw new \Exception('Res exists!');
         }
 
         $oldCompiledResult = null;
@@ -136,10 +135,10 @@ class RequestController extends Controller
             }
         }
         if (!$oldCompiledResult) {
-            throw new \Exception('Отсутствуют положительные результаты у пользователя');
+            throw new \Exception('No results');
         }
-        if ($counter >= 4) {
-            throw new \Exception('3 заявки подряд не аттестованы, необходимо сдавать тестирование заново');
+        if ($counter >= $this->getParameter('keep_results_params.request_count')) {
+            throw new \Exception('');
         }
 
         $newCompiledResult = clone $oldCompiledResult;
@@ -151,7 +150,7 @@ class RequestController extends Controller
         $em->flush();
 
         $response = new \stdClass();
-        $response->message = 'Действующий результаты успешно применены';
+        $response->message = 'Results is applied';
         return new JsonResponse($response);
     }
 

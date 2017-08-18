@@ -1,21 +1,21 @@
 <?php
 
-namespace Partners\CreditBundle\Controller;
+namespace My\Controller;
 
-use Partners\BorlasBundle\Model\OutgoingCommandDelete;
-use Partners\CreditBundle\Manager\OrderManager;
-use Partners\CreditBundle\Controller\CreditDefaultController as Controller;
-use Partners\CreditBundle\Entity\Order;
+use My\Model\OutgoingCommandDelete;
+use My\Manager\OrderManager;
+use My\Controller\CreditDefaultController as Controller;
+use My\Entity\Order;
 use Symfony\Component\HttpFoundation\Request;
 
 /**
- * @package Partners\CreditBundle\Controller
+ * @package My\Controller
  */
 class DostrahovanieController extends Controller
 {
     public function calculateAction(Request $request, $orderId)
     {
-        /** @var \Partners\CreditBundle\Entity\Order $order */
+        /** @var \My\Entity\Order $order */
         $order = $this->getDoctrine()->getRepository('PartnersCreditBundle:Order')->find($orderId);
         if (!$order){
             return $this->getErrorResponse('Договор не найден');
@@ -31,11 +31,10 @@ class DostrahovanieController extends Controller
         $dateStart = $dataSend['dateStart'];
         $duration = $dataSend['duration'];
 
-        /** @var \Partners\CreditBundle\Manager\OrderManager $orderManager */
+        /** @var \My\Manager\OrderManager $orderManager */
         $orderManager = $this->container->get('partners_order_manager');
         /** @var Order $clonedOrder */
         $clonedOrder = $orderManager->generateEmptyOrder($order->getProduct(), null);
-//        $clonedOrder = $orderManager->generateOrder($order->getProduct(), OrderManager::STATUS_FILLING);
 
         $clonedOrder->setDateStart(new \DateTime($dateStart));
         $clonedOrder->setDuration($duration);
@@ -47,11 +46,12 @@ class DostrahovanieController extends Controller
 
         $data = array_merge($order->getDefaultCalculation()->getCalculation()->toArray(false), $dataSend);
 
-        /** @var \Partners\CreditBundle\Manager\CalculationManager $calculationManager */
+        /** @var \My\Manager\CalculationManager $calculationManager */
         $calculationManager = $this->container->get('partners_calculation_manager');
 
         if(!$calculationManager->calculate($clonedOrder, $data)) {
-            return $this->getErrorResponse('Не удалось выполнить расчет: '.implode(', ', $calculationManager->getErrors()));
+            return $this->getErrorResponse('Calculation is not completed: '
+                .implode(', ', $calculationManager->getErrors()));
         }
 
         $sp1 = $order->getDefaultCalculation()->getPremium();
@@ -61,7 +61,7 @@ class DostrahovanieController extends Controller
 
         $sp2 = $clonedOrder->getDefaultCalculation()->getPremium();
         /**
-         * СП3=округл(СП1*(ДО1-ДН2)/((ДО1-ДН1)+1);2)
+         * formula: СП3=округл(СП1*(ДО1-ДН2)/((ДО1-ДН1)+1);2)
          */
         $sp3 = round($sp1*($do1->diff($dn2)->d)/(($do1->diff($dn1)->d)+1), 2);
         $spd = $sp2-$sp3;
@@ -77,10 +77,10 @@ class DostrahovanieController extends Controller
 
     public function cancelOrderAction($orderId)
     {
-        /** @var \Partners\CreditBundle\Entity\Order $order */
+        /** @var \My\Entity\Order $order */
         $order = $this->getDoctrine()->getRepository('PartnersCreditBundle:Order')->find($orderId);
         if (!$order){
-            return $this->getErrorResponse('Договор не найден');
+            return $this->getErrorResponse('Order not found');
         }
         $outgoingCommand = new OutgoingCommandDelete();
         $commandResult = $outgoingCommand->execute(['order' => $order]);
@@ -89,6 +89,6 @@ class DostrahovanieController extends Controller
             return $this->getErrorResponse($outgoingCommand->getErrorText());
         }
 
-        return $this->getSuccessResponse(['ok' => 1]);
+        return $this->getSuccessResponse();
     }
 }

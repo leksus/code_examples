@@ -1,13 +1,12 @@
 <?php
 
-namespace Partners\CreditBundle\Controller;
+namespace My\Controller;
 
-use Partners\CreditBundle\Controller\CreditDefaultController as Controller;
-use Partners\CreditBundle\Entity\Instalment;
+use My\Controller\CreditDefaultController as Controller;
+use My\Entity\Instalment;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Контроллер рассрочки
  * Class InstalmentController
  * @package Partners\CreditBundle\Controller
  */
@@ -21,27 +20,25 @@ class InstalmentController extends Controller
     {
         $order = $this->getDoctrine()->getRepository('PartnersCreditBundle:Order')->find($orderId);
 
-        if ($order) {
-            $instalments = $this->get('partners_instalment_manager')->generateInstalment($order);
-            if ($instalments) {
-                $result = [];
-                /** @var Instalment $instalment */
-                foreach ($instalments as $instalment) {
-                    /**
-                     * возвращаем рассрочки для формирования таблицы
-                     */
-                    $result[] = [
-                        'date' => $instalment->getDateStartPayment()->format('d.m.Y'),
-                        'sum'  => $instalment->getPaymentSum()
-                    ];
-                }
-                return $this->getSuccessResponse(['instalments' => $result]);
-            } else {
-                return $this->getErrorResponse('Не удалось создать рассрочку. Возможно для данного продукта не поддерживается данная функция');
-            }
+        if (!$order) {
+            return $this->getErrorResponse('Order not found');
         }
 
-        return $this->getErrorResponse('Не найден договор');
+        $instalments = $this->get('partners_instalment_manager')->generateInstalment($order);
+        if ($instalments) {
+            return $this->getErrorResponse('Installments is not created');
+        }
+
+        $result = [];
+        /** @var Instalment $instalment */
+        foreach ($instalments as $instalment) {
+            $result[] = [
+                'date' => $instalment->getDateStartPayment()->format('d.m.Y'),
+                'sum'  => $instalment->getPaymentSum()
+            ];
+        }
+
+        return $this->getSuccessResponse(['instalments' => $result]);
     }
 
     /**
@@ -52,13 +49,13 @@ class InstalmentController extends Controller
     {
         $order = $this->getDoctrine()->getRepository('PartnersCreditBundle:Order')->find($orderId);
 
-        if ($order) {
-            if (!$this->get('partners_instalment_manager')->removeInstalment($order)) {
-                return $this->getErrorResponse('Не удалось удалить');
-            }
-            return $this->getSuccessResponse([]);
-        }
+        if (!$order) {
 
-        return $this->getErrorResponse('Не найден договор');
+            return $this->getErrorResponse('Order not found');
+        }
+        if (!$this->get('partners_instalment_manager')->removeInstalment($order)) {
+            return $this->getErrorResponse('Instalment is not deleted');
+        }
+        return $this->getSuccessResponse();
     }
 }

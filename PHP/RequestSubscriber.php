@@ -39,7 +39,7 @@ class RequestSubscriber implements EventSubscriber
         if ($entity->getRegNumber()) {
             return;
         }
-        $prefix = 'АК-';
+        $prefix = $this->getParameter('request_params.reg_number_prefix');
 
         $qb = $this->em
             ->createQuery('SELECT SUBSTRING(r.regNumber, LOCATE(\'-\', r.regNumber)+1)+0 AS reg_int FROM AppBundle:Request r ORDER BY reg_int DESC')
