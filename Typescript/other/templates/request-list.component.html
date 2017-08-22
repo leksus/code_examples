@@ -1,0 +1,290 @@
+<h3>Список заявок</h3>
+
+<div class="alert alert-info" *ngIf="isUser === true">
+    <span class="glyphicon glyphicon-info-sign" aria-hidden="true"></span>
+    Чтобы подать заявку дождитесь одобрения доступа в модуль «Аттестация руководящих кадров».
+</div>
+
+<div class="modal" style="display:block;" *ngIf="declinePopupShown">
+    <div class="modal-dialog" >
+        <div class="modal-content">
+            <div class="modal-body">
+                <p>Отмена заявки:</p>
+                <label>Заявление:</label>
+                <file-uploader [(file)]="currentRequest.cancel_review"></file-uploader>
+                <p class="text-danger">{{declineStatus}}</p>
+            </div>
+            <div class="modal-footer">
+                <div class="btn btn-primary" (click)="cancelRequest()">Отменить заявку</div>
+                <div class="btn btn-default" (click)="declinePopupShown = false">Закрыть окно</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Модальное окно резултатов тестирования -->
+<div class="modal" style="display:block;" *ngIf="testResultsShown">
+    <div class="modal-dialog modal-sm" >
+        <div class="modal-content">
+            <div class="modal-body">
+                <div *ngIf="currentTestRequest">
+                    <span>
+                        Попытка теста {{currentTestRequestSnap.try}}: <br />
+                        {{currentTestRequestSnap.datetime}}
+
+                        <span *ngIf="currentTestRequestSnap.is_set" [style.color]="currentTestRequestSnap.is_success ? 'green' : 'red'">
+                            {{currentTestRequestSnap.result}} / {{currentTestRequestSnap.minimum}}
+                        </span>
+                    </span>
+
+                    <table class="table">
+                        <tr *ngFor="let res of currentTestRequest.test_results">
+                            <td>
+                                {{res.module.title}}
+                            </td>
+                            <td>
+                                {{res.result}}
+                            </td>
+                        </tr>
+                    </table>
+
+                    <span *ngIf="currentTestRequest.is_missed">
+                        {{currentTestRequest.datetime}} - Не присутствовал
+                    </span>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <div class="btn btn-primary" (click)="closeTestResults()">Закрыть окно</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="request-list__requests" *ngIf="isUser === false">
+    <div class="request-list__controls" *ngIf="isRequestAllowed">
+        <a routerLink="/requests/0"><div class="btn btn-primary" >Создать заявку</div></a>
+    </div>
+    <div *ngIf="isAdmin" class="request-list__controls">
+        Выберите роль:
+        <div class="btn-group">
+            <button class="btn btn-default" (click)="showSubPage('att_candidate')" [ngClass]="{'active': subpage == 'att_candidate'}">Кандидат</button>
+            <button class="btn btn-default" (click)="showSubPage('att_manager')" [ngClass]="{'active': subpage == 'att_manager'}">Директор</button>
+        </div>
+        <div class="pull-right">
+            <filter-config></filter-config>
+        </div>
+    </div>
+    <ave-filter [page]="'requests'" [config]="filterToken" *ngIf="isAdmin">
+    </ave-filter>
+
+    <table class="table" *ngIf="isAdmin">
+        <tr>
+            <th>
+                <div>Новая/Принята в работу</div>
+                <div>Первичная/Повторная</div>
+                <div>Роль</div>
+            </th>
+            <th>
+                <div>№ заявки</div>
+                <div>дата</div>
+            </th>
+            <th>
+                <div>ФИО</div>
+            </th>
+            <th>
+                <div>Должность</div>
+                <div>Место работы</div>
+                <div>Округ</div>
+                <div>Район</div>
+                <div>Место в рейтинге</div>
+            </th>
+            <th>
+                <div>Срок окончания аттестации </div>
+                <div>Решение комиссии по прошлой аттестации</div>
+                <div>Счетчик заявок за всё время </div>
+            </th>
+            <th>
+                Допуск
+            </th>
+            <th>
+                <div>Тестирование</div>
+                <div><span *ngIf="subpage == 'att_manager'">Рекомендации ЦГУ<br></span></div>
+            </th>
+            <th>
+                <div>АК</div>
+                <div>Справка</div>
+                <div>Счетчик</div>
+            </th>
+            <th *ngIf="isAdminOnly">
+                История заявки
+            </th>
+            <th>
+                Эксперт
+            </th>
+        </tr>
+        <tr
+                *ngFor="let request of requests"
+                class="request-list__item"
+                [ngClass]="{'request-list__item_changed': request.is_edited_by_user}">
+            <td>
+                <p>
+                    <span *ngIf="request.status.code == 'request_sent' && requestRoles[request.id] == 'att_candidate' || request.status.code == 'test_allowed' && requestRoles[request.id] == 'att_manager'">Новая заявка</span>
+                    <span *ngIf="request.is_on_work">Принята в работу</span>
+                </p>
+                <p>
+                    <span *ngIf="request.is_first_time === true">Первичная</span>
+                    <span *ngIf="request.is_first_time === null">Не указано</span>
+                    <span *ngIf="request.is_first_time === false">Повторная</span>
+                </p>
+                <p *ngIf="requestSnaps[request.id]">
+                    Осталось дней:
+                    {{requestSnaps[request.id].techDaysCounter}}
+                </p>
+            </td>
+            <td><p><a routerLink="/requests/{{request.id}}">{{request.getId(true)}}</a></p>
+                <p>{{request.date |datex:'DD.MM.YYYY':'+03:00'}}</p>
+                <p *ngIf="request.is_queued">
+                    Внеочередная по решению работодателя
+                </p>
+            </td>
+            <td>
+                <a (click)="redirectToAllRequestsOfUser(requestSnaps[request.id].user)" style="cursor: pointer">
+                    {{requestSnaps[request.id].user.getTitle()}}
+                </a>
+            </td>
+            <td>
+                <div *ngIf="requestSnaps[request.id] && requestSnaps[request.id].user.positions.length > 0">
+                    {{requestSnaps[request.id].user.positions[0].title}}
+                </div>
+                <div *ngIf="requestSnaps[request.id].user.positions[0] && requestSnaps[request.id].user.positions[0].organization.name">
+                    {{requestSnaps[request.id].user.positions[0].organization.name}}
+                </div>
+                <div *ngIf="requestSnaps[request.id] && requestSnaps[request.id].user.area">
+                    {{requestSnaps[request.id].user.area.title}}
+                </div>
+                <div *ngIf="requestSnaps[request.id] && requestSnaps[request.id].user.subarea">
+                    {{requestSnaps[request.id].user.subarea.title}}
+                </div>
+                <div *ngIf="requestSnaps[request.id].user.positions[0] && requestSnaps[request.id].user.positions[0].organization.ratings.length">
+                    Рейтинг: {{requestSnaps[request.id].user.positions[0].organization.ratings[requestSnaps[request.id].user.positions[0].organization.ratings.length-1].rating}}
+                </div>
+            </td>
+            <td>
+                <div *ngIf="requestSnaps[request.id].currentAttestation ">
+                    <div *ngIf="requestSnaps[request.id].currentAttestation.date">атт. {{requestSnaps[request.id].currentAttestation.date|datex:'DD.MM.YYYY':'+03:00'}}</div>
+                    <div *ngIf="requestSnaps[request.id].currentAttestation.duration">Аттестован на {{requestSnaps[request.id].currentAttestation.duration.title}}</div>
+
+                </div>
+                <div>{{request.user_request_count}}/{{requestSnaps[request.id].request_count}}</div>
+            </td>
+            <td>
+                <p>Соответствие ЕКС: {{getEks(request.is_eks_valid)}}</p>
+
+                <p *ngIf="request.precom_date">Дата АК {{request.precom_date|datex:'DD.MM.YYYY':'+03:00'}}</p>
+                <p *ngIf="request.is_accepted_by_precom">Решение: {{request.is_accepted_by_precom ? 'допущен' : 'не допущен'}}</p>
+
+            </td>
+            <td>
+                <div *ngIf="requestSnaps[request.id].testResults.length">
+                    <div *ngFor="let res of requestSnaps[request.id].testResults; let i = index">
+                        <p *ngIf="!res.is_missed">
+                            <a style="cursor:pointer;" (click)="showTestResults(request.id, res);">
+                            <span *ngIf="!res.is_missed">
+                                Попытка {{res.try}}: <br />
+                                {{res.datetime}}
+                                <span *ngIf="res.is_set" [style.color]="(res.result > 70 && res.minimum > 50) ? 'green' : 'red'">
+                                    {{res.result}} / {{res.minimum}}
+                                </span>
+                            </span>
+                            </a>
+                        </p>
+
+                        <p *ngIf="res.is_missed">{{res.datetime}} - Не присутствовал</p>
+                    </div>
+                </div>
+                <div *ngIf="subpage == 'att_manager' && request.status.code !== 'test_passed' && request.status.code !== 'test_failed'">
+                    <hr>
+                    осталось дней до окончания срока прохождения теста:
+                    {{requestSnaps[request.id].testDaysCounter}}
+                </div>
+                <div *ngIf="subpage == 'att_manager'">
+                    рекомендация ЦГУ - {{requestSnaps[request.id].hasCgu ? 'Да' : 'Нет'}}
+                </div>
+            </td>
+            <td>
+                <div *ngIf="request.attestation_decision && request.attestation_decision.attestation && request.attestation_decision.attestation_council">
+                    <div>Решение АК {{request.attestation_decision.attestation_council.datetime|datex:'DD.MM.YYYY':'+03:00'}}</div>
+                    <div>
+                        решение: {{request.attestation_decision.getAttestationResult(requestSnaps[request.id].is_candidate)}}
+                    </div>
+                    <decision-view
+                            [decision]="request.attestation_decision"
+                            [candidate]="requestSnaps[request.id].is_candidate">
+                    </decision-view>
+                </div>
+                <div *ngIf="request.request_procedure">
+                    <p>
+                        <a>Справка</a>
+                        <span *ngIf="!request.request_procedure || !request.request_procedure.id">
+                        не приложена
+                    </span>
+                        <span *ngIf="request.request_procedure && request.request_procedure.id">
+                        {{request.request_procedure.is_accepted ? '' : 'не'}} согласована.
+                    </span>
+                    </p>
+                </div>
+                <p *ngIf="archivedStatuses.indexOf(request.status.code) < 0">
+                    Осталось дней до окончания срока прохождения процедуры аттестации:
+                    {{requestSnaps[request.id].attestationDaysCounter}}
+                </p>
+                <p>
+                    <request-attestation [request] = "request" [councils]="councils" [admin]="isAdminOnly"></request-attestation>
+                </p>
+            </td>
+            <td *ngIf="isAdminOnly">
+                <a (click)="redirectToLogs(request.id)" style="cursor: pointer">
+                    ссылка на лог-файл
+                </a>
+            </td>
+            <td>
+                <p>{{requestSnaps[request.id].expertsList}}</p>
+                <p>Текущий: {{requestSnaps[request.id].currentExpert}}</p>
+            </td>
+        </tr>
+    </table>
+
+    <table class="table" *ngIf="!isAdmin">
+        <tr>
+            <th>Номер заявки</th>
+            <th>Дата</th>
+            <th>Текущий статус</th>
+            <th>Роль</th>
+            <th>Действия</th>
+        </tr>
+        <tr
+                *ngFor="let request of requests"
+                class="request-list__item" [ngClass]="{'request-list__item_changed': request.is_commented_by_admin}" >
+
+            <td>
+                <a routerLink="/requests/{{request.id}}">
+                    {{request.getId()}}
+                </a>
+            </td>
+            <td>{{request.date  |datex:'DD.MM.YYYY':'+03:00'}}</td>
+            <td>
+                <span>{{translateStatus(request.status)}}</span>
+            </td>
+            <td>{{requestRoles[request.id]}}</td>
+
+
+            <td>
+                <div
+                        class="btn btn-danger"
+                        (click)="showDeclineDialog(request.id)"
+                        *ngIf="archivedStatuses.indexOf(request.status.code) < 0 && request.status.code != 'new' && !isAdmin">Отменить заявку</div>
+            </td>
+
+
+        </tr>
+    </table>
+</div>
