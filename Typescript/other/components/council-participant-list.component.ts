@@ -2,9 +2,9 @@ import { Component, OnInit } from '@angular/core';
 
 import {
     UserHelper, UserContext, CouncilParticipantResource
-} from "core.module";
+} from 'core.module';
 import {Error, Message, MessageService} from 'common.module';
-import {CouncilParticipant} from "../../core/classes/council-participant";
+import {CouncilParticipant} from '../../core/classes/council-participant';
 
 @Component({
     selector: 'council-participant-list',
